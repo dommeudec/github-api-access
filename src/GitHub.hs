@@ -38,20 +38,23 @@ data RepoContributor =
                   } deriving (Generic, FromJSON, Show)
 
 type GitHubAPI = "users" :> Header  "user-agent" UserAgent
+                         :> BasicAuth "github" Int
                          :> Capture "username" Username  :> Get '[JSON] GitHubUser
 
             :<|> "users" :> Header  "user-agent" UserAgent
+                         :> BasicAuth "github" Int
                          :> Capture "username" Username  :> "repos" :>  Get '[JSON] [GitHubRepo]
 
             :<|> "repos" :> Header  "user-agent" UserAgent
+                         :> BasicAuth "github" Int
                          :> Capture "username" Username
                          :> Capture "repo"     Reponame  :> "contributors" :>  Get '[JSON] [RepoContributor]
 
 gitHubAPI :: Proxy GitHubAPI
 gitHubAPI = Proxy
 
-getUser :: Maybe UserAgent -> Username -> ClientM GitHubUser
-getUserRepos :: Maybe UserAgent -> Username -> ClientM [GitHubRepo]
-getRepoContribs :: Maybe UserAgent -> Username -> Reponame -> ClientM [RepoContributor]
+getUser ::          Maybe UserAgent -> BasicAuthData -> Username            -> ClientM GitHubUser
+getUserRepos ::     Maybe UserAgent -> BasicAuthData -> Username            -> ClientM [GitHubRepo]
+getRepoContribs ::  Maybe UserAgent -> BasicAuthData -> Username -> Reponame -> ClientM [RepoContributor]
 
 getUser :<|> getUserRepos :<|> getRepoContribs = client gitHubAPI
