@@ -35,20 +35,20 @@ someFunc = do
   putStrLn $ "github token for api call is " ++ token
 
   let auth = BasicAuthData (fromString user) (fromString token)
-  
+
   testGitHubCall auth $ pack rName
   putStrLn "end."
 
 
 testGitHubCall :: BasicAuthData -> Text -> IO ()
-testGitHubCall auth name = 
+testGitHubCall auth name =
   (SC.runClientM (GH.getUser (Just "haskell-app") auth name) =<< env) >>= \case
 
     Left err -> do
       putStrLn $ "heuston, we have a problem: " ++ show err
     Right res -> do
       putStrLn $ "the votes of the github jury are " ++ show res
-      
+
       -- now lets get the users repositories
       (SC.runClientM (GH.getUserRepos (Just "haskell-app") auth name) =<< env) >>= \case
         Left err -> do
@@ -68,9 +68,18 @@ testGitHubCall auth name =
 
             (ers, _)-> do
               putStrLn $ "heuston, we have a problem (getting contributors): " ++ show ers
-                
-           
-     
+
+
+              partitionEithers <$> mapM (getCommits auth name) repos >>= \case
+
+                ([], commits) -> do
+                  putStrLn $ " commits are: " ++ show commits
+
+                (ers, _)-> do
+                  putStrLn $ "heuston, we have a problem (getting commits): " ++ show ers
+
+
+
   where env :: IO SC.ClientEnv
         env = do
           manager <- newManager tlsManagerSettings
@@ -80,18 +89,16 @@ testGitHubCall auth name =
         getContribs auth name (GH.GitHubRepo repo _ _) =
           SC.runClientM (GH.getRepoContribs (Just "haskell-app") auth name repo) =<< env
 
+        getCommits :: BasicAuthData -> GH.Username -> GH.GitHubRepo -> IO (Either SC.ClientError [GH.RepoCommit])
+        getCommits auth name (GH.GitHubRepo repo _ _) =
+          SC.runClientM (GH.getRepoCommit (Just "haskell-app") auth name repo) =<< env
+
         groupContributors :: [GH.RepoContributor] -> [GH.RepoContributor]
         groupContributors  = sortBy (\(GH.RepoContributor _ c1) (GH.RepoContributor _ c2) ->  compare c1 c2) .
                              map mapfn .
                              groupBy (\(GH.RepoContributor l1 _) (GH.RepoContributor l2 _) ->  l1 == l2)
+
+
          where mapfn :: [GH.RepoContributor] -> GH.RepoContributor
-               mapfn xs@((GH.RepoContributor l _):_) = GH.RepoContributor l . sum $ 
+               mapfn xs@((GH.RepoContributor l _):_) = GH.RepoContributor l . sum $
                                                        map (\(GH.RepoContributor _ c) -> c)  xs
-               
-              
-                
-          
-
-
-
-       
