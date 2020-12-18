@@ -34,6 +34,7 @@ data GitHubRepo =
   GitHubRepo { name :: Text
              , full_name :: Maybe Text
              , language :: Maybe Text
+             , updated_at :: Maybe Text
              } deriving (Generic, FromJSON, Show)
 
 -- Github user repo contributors

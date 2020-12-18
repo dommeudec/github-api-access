@@ -57,7 +57,7 @@ testGitHubCall auth name =
           putStrLn $ "ERROR, retrieving repos: " ++ show err
         Right repos -> do
           putStrLn $ "Repositories are:" ++ "\n\t" ++
-            intercalate "\n\t" (map (\(GH.GitHubRepo n c b) -> "[" ++ show n ++ ", " ++ show c ++ ", " ++ show b ++ "]") repos)
+            intercalate "\n\t" (map (\(GH.GitHubRepo n c b h) -> "[" ++ show n ++ ", " ++ show c ++ ", " ++ show b ++ ", " ++ show h ++ "]") repos)
 
         -- Call to get repositories' contributors, ordered by name
           partitionEithers <$> mapM (getContribs auth name) repos >>= \case
@@ -87,11 +87,11 @@ testGitHubCall auth name =
           return $ SC.mkClientEnv manager (SC.BaseUrl SC.Http "api.github.com" 80 "")
 
         getContribs :: BasicAuthData -> GH.Username -> GH.GitHubRepo -> IO (Either SC.ClientError [GH.RepoContributor])
-        getContribs auth name (GH.GitHubRepo repo _ _) =
+        getContribs auth name (GH.GitHubRepo repo _ _ _) =
           SC.runClientM (GH.getRepoContribs (Just "haskell-app") auth name repo) =<< env
 
         getCommits :: BasicAuthData -> GH.Username -> GH.GitHubRepo -> IO (Either SC.ClientError [GH.RepoCommit])
-        getCommits auth name (GH.GitHubRepo repo _ _) =
+        getCommits auth name (GH.GitHubRepo repo _ _ _) =
           SC.runClientM (GH.getRepoCommit (Just "haskell-app") auth name repo) =<< env
 
         groupContributors :: [GH.RepoContributor] -> [GH.RepoContributor]
