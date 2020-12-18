@@ -47,21 +47,21 @@ testGitHubCall auth name =
     Left err -> do
       putStrLn $ "ERROR, getting user: " ++ show err
     Right res -> do
-      putStrLn $ "User is: " ++ show res
+      putStrLn $ "User is: " ++ "\n\t" ++ show res
 
       -- now lets get the users repositories
       (SC.runClientM (GH.getUserRepos (Just "haskell-app") auth name) =<< env) >>= \case
         Left err -> do
           putStrLn $ "ERROR, retrieving repos: " ++ show err
         Right repos -> do
-          putStrLn $ "Repositories are:" ++
-            intercalate ", " (map (\(GH.GitHubRepo n _ _ ) -> unpack n) repos)
+          putStrLn $ "Repositories are:" ++ "\n\t" ++
+            intercalate "\n\t" (map (\(GH.GitHubRepo n c b) -> "[" ++ show n ++ ", " ++ show c ++ ", " ++ show b ++ "]") repos)
 
           -- now lets get the full list of collaborators from repositories
           partitionEithers <$> mapM (getContribs auth name) repos >>= \case
 
             ([], contribs) ->
-              putStrLn $ " Contributors are: " ++
+              putStrLn $ " Contributors are: " ++ "\n\t" ++
               (intercalate "\n\t" .
                 map (\(GH.RepoContributor n c) -> "[" ++ show n ++ "," ++ show c ++ "]") .
                 groupContributors $ concat contribs)

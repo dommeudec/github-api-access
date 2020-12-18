@@ -30,7 +30,7 @@ data GitHubUser =
 
 data GitHubRepo =
   GitHubRepo { name :: Text
-             , fullname :: Maybe Text
+             , full_name :: Maybe Text
              , language :: Maybe Text
              } deriving (Generic, FromJSON, Show)
 
