@@ -41,7 +41,7 @@ data RepoContributor =
 
 data RepoCommit =
   RepoCommits { url :: Text
-              , message :: Text
+              , message :: Maybe Text
               } deriving (Generic, FromJSON, Show)
 
 

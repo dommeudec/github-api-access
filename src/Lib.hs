@@ -28,16 +28,16 @@ import Data.ByteString.UTF8 (fromString)
 
 someFunc :: IO ()
 someFunc = do
-  putStrLn "Let's try a GitHubCall"
+  putStrLn "GitHubCall started.."
   (rName:user:token:_) <- getArgs
-  putStrLn $ "name is " ++ rName
-  putStrLn $ "github account for API call is " ++ user
-  putStrLn $ "github token for api call is " ++ token
+  putStrLn $ "Name is " ++ rName
+  putStrLn $ "Github account for API call is " ++ user
+  putStrLn $ "Github token for api call is " ++ token
 
   let auth = BasicAuthData (fromString user) (fromString token)
 
   testGitHubCall auth $ pack rName
-  putStrLn "end."
+  putStrLn ".. call finished."
 
 
 testGitHubCall :: BasicAuthData -> Text -> IO ()
@@ -45,39 +45,38 @@ testGitHubCall auth name =
   (SC.runClientM (GH.getUser (Just "haskell-app") auth name) =<< env) >>= \case
 
     Left err -> do
-      putStrLn $ "heuston, we have a problem: " ++ show err
+      putStrLn $ "ERROR, getting user: " ++ show err
     Right res -> do
-      putStrLn $ "the votes of the github jury are " ++ show res
+      putStrLn $ "User is: " ++ show res
 
       -- now lets get the users repositories
       (SC.runClientM (GH.getUserRepos (Just "haskell-app") auth name) =<< env) >>= \case
         Left err -> do
-          putStrLn $ "heuston, we have a problem (gettign repos): " ++ show err
+          putStrLn $ "ERROR, retrieving repos: " ++ show err
         Right repos -> do
-          putStrLn $ " repositories are:" ++
+          putStrLn $ "Repositories are:" ++
             intercalate ", " (map (\(GH.GitHubRepo n _ _ ) -> unpack n) repos)
 
           -- now lets get the full list of collaborators from repositories
           partitionEithers <$> mapM (getContribs auth name) repos >>= \case
 
             ([], contribs) ->
-              putStrLn $ " contributors are: " ++
+              putStrLn $ " Contributors are: " ++
               (intercalate "\n\t" .
-               map (\(GH.RepoContributor n c) -> "[" ++ show n ++ "," ++ show c ++ "]") .
-               groupContributors $ concat contribs)
+                map (\(GH.RepoContributor n c) -> "[" ++ show n ++ "," ++ show c ++ "]") .
+                groupContributors $ concat contribs)
 
             (ers, _)-> do
-              putStrLn $ "heuston, we have a problem (getting contributors): " ++ show ers
+              putStrLn $ "ERROR, getting contributors: " ++ show ers
 
+              -- returning list of all user commits
+              --partitionEithers <$> mapM (getCommits auth name) repos >>= \case
 
-              partitionEithers <$> mapM (getCommits auth name) repos >>= \case
+                --([], commits) -> do
+                --  putStrLn $ " commits are: " ++ show commits
 
-                ([], commits) -> do
-                  putStrLn $ " commits are: " ++ show commits
-
-                (ers, _)-> do
-                  putStrLn $ "heuston, we have a problem (getting commits): " ++ show ers
-
+                --(ers, _)-> do
+                --  putStrLn $ "heuston, we have a problem (getting commits): " ++ show ers
 
 
   where env :: IO SC.ClientEnv
