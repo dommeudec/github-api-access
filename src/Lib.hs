@@ -42,6 +42,8 @@ someFunc = do
 
 testGitHubCall :: BasicAuthData -> Text -> IO ()
 testGitHubCall auth name =
+
+  -- Call to get user info
   (SC.runClientM (GH.getUser (Just "haskell-app") auth name) =<< env) >>= \case
 
     Left err -> do
@@ -49,7 +51,7 @@ testGitHubCall auth name =
     Right res -> do
       putStrLn $ "User is: " ++ "\n\t" ++ show res
 
-      -- now lets get the users repositories
+      -- Call to get user repositories
       (SC.runClientM (GH.getUserRepos (Just "haskell-app") auth name) =<< env) >>= \case
         Left err -> do
           putStrLn $ "ERROR, retrieving repos: " ++ show err
@@ -57,26 +59,26 @@ testGitHubCall auth name =
           putStrLn $ "Repositories are:" ++ "\n\t" ++
             intercalate "\n\t" (map (\(GH.GitHubRepo n c b) -> "[" ++ show n ++ ", " ++ show c ++ ", " ++ show b ++ "]") repos)
 
-          -- now lets get the full list of collaborators from repositories
+        -- Call to get repositories' contributors, ordered by name
           partitionEithers <$> mapM (getContribs auth name) repos >>= \case
 
             ([], contribs) ->
-              putStrLn $ " Contributors are: " ++ "\n\t" ++
-              (intercalate "\n\t" .
+              putStrLn $ "Contributors are: " ++ "\n\t" ++
+                (intercalate "\n\t" .
                 map (\(GH.RepoContributor n c) -> "[" ++ show n ++ "," ++ show c ++ "]") .
                 groupContributors $ concat contribs)
 
             (ers, _)-> do
               putStrLn $ "ERROR, getting contributors: " ++ show ers
 
-              -- returning list of all user commits
+              -- Call to get repositories' commits
               --partitionEithers <$> mapM (getCommits auth name) repos >>= \case
 
-                --([], commits) -> do
-                --  putStrLn $ " commits are: " ++ show commits
-
+                --([], commits) ->
+                  --putStrLn $ "Commits are: " ++ "\n\t" ++ show commits
                 --(ers, _)-> do
-                --  putStrLn $ "heuston, we have a problem (getting commits): " ++ show ers
+                  --putStrLn $ "ERROR, getting commits: " ++ show ers
+
 
 
   where env :: IO SC.ClientEnv
@@ -93,7 +95,7 @@ testGitHubCall auth name =
           SC.runClientM (GH.getRepoCommit (Just "haskell-app") auth name repo) =<< env
 
         groupContributors :: [GH.RepoContributor] -> [GH.RepoContributor]
-        groupContributors  = sortBy (\(GH.RepoContributor _ c1) (GH.RepoContributor _ c2) ->  compare c1 c2) .
+        groupContributors  = sortBy (\(GH.RepoContributor c1 _) (GH.RepoContributor c2 _) ->  compare c1 c2) .
                              map mapfn .
                              groupBy (\(GH.RepoContributor l1 _) (GH.RepoContributor l2 _) ->  l1 == l2)
 
